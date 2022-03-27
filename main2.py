@@ -1,0 +1,40 @@
+import random
+import time
+from multiprocessing import Process, Queue, current_process
+
+
+def mul(a, b):
+    time.sleep(0.5*random.random())
+    return a * b
+
+
+def calculate(func, args):
+    result = func(*args)
+    return '%s says that %s%s = %s' % (current_process().name, func.__name__, args, result)
+
+
+def worker(input, output):
+    for func, args in iter(input.get, 'STOP'):
+        result = calculate(func, args)
+        output.put(result)
+
+
+def main():
+    NUMBER_OF_PROCESSES = 4
+    TASKS1 = [(mul, (i, 2)) for i in range(10+1)]
+
+    task_queue = Queue()
+    done_queue = Queue()
+
+    for task in TASKS1:
+        task_queue.put(task)
+
+    for _ in range(NUMBER_OF_PROCESSES):
+        Process(target=worker, args=(task_queue, done_queue)).start()
+
+    for _ in range(len(TASKS1)):
+        print('\t', done_queue.get())
+
+
+if __name__ == "__main__":
+    main()
