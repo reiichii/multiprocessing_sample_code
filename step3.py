@@ -8,12 +8,14 @@ import multiprocessing
 from random import choice, random
 import time
 
+
 def listener_configurer():
     root = logging.getLogger()
-    h = logging.handlers.RotatingFileHandler('main3_test.log', 'a', 3000)
+    h = logging.handlers.RotatingFileHandler('step3.log', 'a', 3000)
     f = logging.Formatter('%(asctime)s %(processName)-10s %(name)s %(levelname)-8s %(message)s')
     h.setFormatter(f)
     root.addHandler(h)
+
 
 def listener_process(queue, configurer):
     configurer()
@@ -29,6 +31,7 @@ def listener_process(queue, configurer):
             import sys, traceback
             print('Whoops! Problem:', file=sys.stderr)
             traceback.print_exc(file=sys.stderr)
+
 
 def worker_configurer(queue):
     h = logging.handlers.QueueHandler(queue)
@@ -56,7 +59,8 @@ def main():
     listener.start()
 
     workers = []
-    for _ in range(10):
+    NUMBER_OF_PROCESSES = multiprocessing.cpu_count() - 1
+    for _ in range(NUMBER_OF_PROCESSES):
         worker = multiprocessing.Process(target=worker_process, args=(q, worker_configurer))
         workers.append(worker)
         worker.start()

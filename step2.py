@@ -1,6 +1,6 @@
 import random
 import time
-from multiprocessing import Process, Queue, current_process
+from multiprocessing import Process, Queue, current_process, cpu_count
 
 
 def mul(a, b):
@@ -13,27 +13,31 @@ def calculate(func, args):
     return '%s says that %s%s = %s' % (current_process().name, func.__name__, args, result)
 
 
-def worker(input, output):
-    for func, args in iter(input.get, 'STOP'):
+def worker(q):
+    for func, args in iter(q.get, "STOP"):
         result = calculate(func, args)
-        output.put(result)
+        print(result)
 
 
 def main():
-    NUMBER_OF_PROCESSES = 4
+    NUMBER_OF_PROCESSES = cpu_count()
     TASKS1 = [(mul, (i, 2)) for i in range(10+1)]
 
-    task_queue = Queue()
-    done_queue = Queue()
+    queue = Queue()
 
     for task in TASKS1:
-        task_queue.put(task)
+        queue.put(task)
 
+    processes = []
     for _ in range(NUMBER_OF_PROCESSES):
-        Process(target=worker, args=(task_queue, done_queue)).start()
+        p = Process(target=worker, args=(queue,))
+        processes.append(p)
+        p.start()
 
-    for _ in range(len(TASKS1)):
-        print('\t', done_queue.get())
+    for task in TASKS1:
+        queue.put("STOP")
+    for p in processes:
+        p.join()
 
 
 if __name__ == "__main__":
